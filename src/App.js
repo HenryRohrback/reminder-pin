@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+
 function App() {
   const [reminderTime, setReminderTime] = useState('12:00');
   const [pillTakenToday, setPillTakenToday] = useState(false);
@@ -80,7 +81,7 @@ function App() {
   return (
     <div className="App">
       <h1>Medication Reminder</h1>
-
+<img src="/logo.svg" alt="App Logo" style={{ height: '100px' }} />
       <div className="card">
         <button onClick={connectToDevice}>Connect to Reminder Pin</button>
       </div>
