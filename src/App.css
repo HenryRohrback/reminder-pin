@@ -1,0 +1,48 @@
+/* App.css */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f6f6f6;
+}
+
+.App {
+  text-align: center;
+  padding: 1rem;
+  max-width: 480px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+button {
+  font-size: 1.1rem;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+input[type="time"] {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}

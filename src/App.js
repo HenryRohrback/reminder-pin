@@ -1,0 +1,110 @@
+// React web app version of the medication reminder app with Web Bluetooth integration
+
+import React, { useState, useEffect } from 'react';
+import './App.css';
+
+function App() {
+  const [reminderTime, setReminderTime] = useState('12:00');
+  const [pillTakenToday, setPillTakenToday] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [device, setDevice] = useState(null);
+  const [characteristic, setCharacteristic] = useState(null);
+
+  useEffect(() => {
+    loadStreak();
+  }, []);
+
+  const loadStreak = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastTaken = localStorage.getItem('lastTaken');
+    const savedStreak = parseInt(localStorage.getItem('streak')) || 0;
+
+    if (lastTaken === today) {
+      setPillTakenToday(true);
+    } else {
+      setPillTakenToday(false);
+    }
+    setStreak(savedStreak);
+  };
+
+  const handleTimeChange = (event) => {
+    setReminderTime(event.target.value);
+    if (characteristic) {
+      const timeParts = event.target.value.split(':');
+      const payload = `SET:${timeParts[0]}:${timeParts[1]}`;
+      characteristic.writeValue(new TextEncoder().encode(payload));
+    }
+  };
+
+  const markPillTaken = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const lastTaken = localStorage.getItem('lastTaken');
+    let newStreak = streak;
+
+    if (lastTaken !== today) {
+      newStreak += 1;
+      localStorage.setItem('streak', newStreak.toString());
+      localStorage.setItem('lastTaken', today);
+      setStreak(newStreak);
+      setPillTakenToday(true);
+    }
+  };
+
+  const connectToDevice = async () => {
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: 'Xiao' }],
+        optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+      });
+      setDevice(device);
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+      const char = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+      setCharacteristic(char);
+
+      char.startNotifications();
+      char.addEventListener('characteristicvaluechanged', handleNotifications);
+    } catch (error) {
+      console.error('Bluetooth connection failed:', error);
+    }
+  };
+
+  const handleNotifications = (event) => {
+    const value = new TextDecoder().decode(event.target.value);
+    if (value.trim() === 'PILL_TAKEN') {
+      markPillTaken();
+    }
+  };
+
+  return (
+    <div className="App">
+      <h1>Medication Reminder</h1>
+
+      <div className="card">
+        <button onClick={connectToDevice}>Connect to Reminder Pin</button>
+      </div>
+
+      <div className="card">
+        <label htmlFor="reminderTime">Set Reminder Time:</label>
+        <input
+          type="time"
+          id="reminderTime"
+          value={reminderTime}
+          onChange={handleTimeChange}
+        />
+      </div>
+
+      <div className="card">
+        <button onClick={markPillTaken}>Mark Pill as Taken</button>
+        {pillTakenToday && <p>Pill already taken today</p>}
+      </div>
+
+      <div className="card">
+        <p><strong>Streak:</strong> {streak} days</p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
