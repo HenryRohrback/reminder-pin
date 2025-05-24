@@ -10,10 +10,28 @@ function App() {
   const [streak, setStreak] = useState(0);
   const [device, setDevice] = useState(null);
   const [characteristic, setCharacteristic] = useState(null);
+const [timeUntil, setTimeUntil] = useState('');
+const [notifiedToday, setNotifiedToday] = useState(false);
+
+const requestNotificationPermission = async () => {
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    try {
+      await Notification.requestPermission();
+    } catch (e) {
+      console.error('Notification permission error:', e);
+    }
+  }
+};
+
 
   useEffect(() => {
     loadStreak();
   }, []);
+
+useEffect(() => {
+  requestNotificationPermission();
+}, []);
+
 
   const loadStreak = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -26,7 +44,9 @@ function App() {
       setPillTakenToday(false);
     }
     setStreak(savedStreak);
+setNotifiedToday(false);
   };
+
 
   const handleTimeChange = (event) => {
     setReminderTime(event.target.value);
@@ -71,12 +91,52 @@ function App() {
     }
   };
 
+
   const handleNotifications = (event) => {
     const value = new TextDecoder().decode(event.target.value);
     if (value.trim() === 'PILL_TAKEN') {
       markPillTaken();
     }
   };
+useEffect(() => {
+  const interval = setInterval(updateTimeUntil, 60000); // every 60 seconds
+  updateTimeUntil(); // also run immediately
+  return () => clearInterval(interval);
+}, [reminderTime]);
+
+const updateTimeUntil = () => {
+  const now = new Date();
+  const [hours, minutes] = reminderTime.split(':').map(Number);
+  const nextPillTime = new Date();
+  nextPillTime.setHours(hours, minutes, 0, 0);
+
+
+  if (nextPillTime < now) {
+    nextPillTime.setDate(nextPillTime.getDate() + 1); // if it's already passed today
+  }
+
+  const diffMs = nextPillTime - now;
+  const diffMin = Math.floor(diffMs / 60000);
+  const h = Math.floor(diffMin / 60);
+  const m = diffMin % 60;
+
+  setTimeUntil(`${h}h ${m}m`);
+
+ if (diffMin === 0 && !notifiedToday && Notification.permission === 'granted') {
+    new Notification('Time to take your pill!', {
+      body: 'Tap to open the app and confirm.',
+      icon: '/logo192.png', // Optional logo path
+    });
+    setNotifiedToday(true);
+  }
+if (diffMin === 0 && !notifiedToday && Notification.permission === 'granted') {
+  new Notification('Time to take your pill!', {
+    body: 'Tap to open the app and confirm.',
+    icon: '/logo192.png'
+  });
+  setNotifiedToday(true);
+}
+};
 
   return (
     <div className="App">
@@ -95,10 +155,14 @@ function App() {
           onChange={handleTimeChange}
         />
       </div>
+<div className="card">
+  <p><strong>Time until next pills:</strong> {timeUntil}</p>
+</div>
+
 
       <div className="card">
-        <button onClick={markPillTaken}>Mark Pill as Taken</button>
-        {pillTakenToday && <p>Pill already taken today</p>}
+        <button onClick={markPillTaken}>Mark Pills as Taken</button>
+        {pillTakenToday && <p>Pills already taken today</p>}
       </div>
 
       <div className="card">
